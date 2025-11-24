@@ -15,8 +15,8 @@ export const runAutomation = async (c: Context): Promise<HandlerResponse<any>> =
 
   console.log(`Automation running...`);
 
-  cancelUnpaidTransaction()
-  completeSentTransaction()
+  await cancelUnpaidTransaction()
+  await completeSentTransaction()
   return c.json({ message: "Success" });
 }
 
@@ -37,6 +37,7 @@ const completeSentTransaction = async (): Promise<void> => {
     id: Transaction.id,
     total_amount: Transaction.total_amount,
     store_id: Transaction.store_id,
+    store_owner_id: Store.user_id,
     buyer_id: Transaction.buyer_id,
     user_email: User.email,
     user_name: User.name,
@@ -61,7 +62,11 @@ const completeSentTransaction = async (): Promise<void> => {
 
     await db.update(User)
       .set({ balance: sql`${User.balance} + ${income}` })
-      .where(eq(User.id, txn.buyer_id));
+      .where(eq(User.id, txn.store_owner_id));
+
+    await db.update(Transaction)
+      .set({ status: 'completed' })
+      .where(eq(Transaction.id, txn.id));
 
     sendEmail(
       txn.store_email,

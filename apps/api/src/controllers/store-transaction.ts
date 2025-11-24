@@ -2,7 +2,7 @@ import type { Context } from "hono";
 import type { HandlerResponse } from "hono/types";
 import { db } from "../db.js";
 import { Store, Transaction, User } from "../schema.js";
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { sendEmail } from "../utils/email.js";
 import { transactionListSchema, transactionStatusUpdateSchema } from "../validators/seller.js";
 import z from "zod";
@@ -16,15 +16,21 @@ export const storeTransactionList = async (c: Context): Promise<HandlerResponse<
   }
 
   const req = valid.data;
+  let searchQuery;
+  if (req.search !== '') {
+    const numericSearch = Number(req.search);
+    if (!Number.isNaN(numericSearch)) {
+      searchQuery = eq(Transaction.id, numericSearch);
+    } else {
+      searchQuery = ilike(Transaction.description, `%${req.search}%`);
+    }
+  }
+
   const where = and(
     inArray(Transaction.status, ['in_process', 'sent', 'complained', 'completed', 'rejected']),
     eq(Transaction.store_id, store.id),
-    req.search === '' ? undefined :
-      or(
-        ilike(Transaction.id, `%${req.search}%`),
-        ilike(Transaction.description, `%${req.search}%`)
-      ),
-      req.status ? eq(Transaction.status, req.status) : undefined,
+    searchQuery,
+    req.status ? eq(Transaction.status, req.status) : undefined,
   )
   const limit = 10
   const offset = (req.page - 1) * limit

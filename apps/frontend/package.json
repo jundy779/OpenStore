@@ -7,7 +7,7 @@
   },
   "scripts": {
     "build": "nuxt build",
-    "dev": "NUXT_PORT=7101 nuxt dev",
+    "dev": "cross-env NUXT_PORT=7200 nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
@@ -21,6 +21,7 @@
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1"
+    "@types/node": "^24.10.1",
+    "cross-env": "^7.0.3"
   }
 }

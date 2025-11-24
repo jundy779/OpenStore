@@ -134,6 +134,21 @@ Pesanan #${transaction.id} dikomplain pembeli. Silahkan login ke dashboard untuk
     const fee = Math.round((Number(transaction.total_amount) * Number(sellerFee)) / 100);
     const income = Math.round(Number(transaction.total_amount) - fee);
 
+    const items = Array.isArray(transaction.items) ? transaction.items : [];
+    for (const item of items) {
+      const productId = Number(item.product_id ?? item.id);
+      if (!productId || Number.isNaN(productId)) {
+        continue;
+      }
+      const qty = Number(item.quantity ?? 1) || 1;
+      await db.update(Product)
+        .set({
+          sold_count: sql`${Product.sold_count} + ${qty}`,
+          in_stock: sql`CASE WHEN ${Product.in_stock} = 'one' THEN 'empty' ELSE ${Product.in_stock} END`,
+        })
+        .where(eq(Product.id, productId));
+    }
+
     await db.update(Store)
       .set({ sales_count: sql`${Store.sales_count} + 1` })
       .where(eq(Store.id, transaction.store_id));
@@ -141,13 +156,6 @@ Pesanan #${transaction.id} dikomplain pembeli. Silahkan login ke dashboard untuk
     await db.update(User)
       .set({ balance: sql`${User.balance} + ${income}` })
       .where(eq(User.id, store.user_id));
-    
-    await db.update(Product)
-      .set({
-        sold_count: sql`${Product.sold_count} + 1`,
-        in_stock: sql`CASE WHEN ${Product.in_stock} = 'one' THEN 'empty' ELSE ${Product.in_stock} END`,
-      })
-      .where(eq(Product.id, transaction.items[0].product_id));
 
     sendEmail(
       store.email,

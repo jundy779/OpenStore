@@ -17,7 +17,7 @@ export const productCreateUpdateSchema = z.object({
 });
 
 export const transactionListSchema = z.object({
-  search: z.string().optional(),
+  search: z.string().optional().default(''),
   status: z.enum([
     'in_process',
     'sent',
