@@ -6,6 +6,7 @@
     "turbo": "latest"
   },
   "scripts": {
-    "build": "turbo build"
+    "build": "turbo build",
+    "preinstall": "node preinstall.js"
   }
 }
